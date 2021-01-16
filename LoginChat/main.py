@@ -13,6 +13,8 @@ class SampleApp(tk.Tk):
         container.grid_rowconfigure(0, weight=1)
         container.grid_columnconfigure(0, weight=1)
 
+        self.username = ""
+
         self.frames = {}
         for F in (Login, App):
             page_name = F.__name__
@@ -64,7 +66,7 @@ class Login(tk.Frame):
         
         
         self.frame = tk.Frame(self, highlightbackground="#3d3d3d", highlightthickness=.5, borderwidth=10)
-        self.logoLabel = tk.Label(self.frame, text="RAGETEARS INC.", font=("Sans", 10), pady=10)
+        self.logoLabel = tk.Label(self.frame, text="COMPANY NAME INC.", font=("Sans", 10), pady=10)
         self.logoLabel.grid(sticky=tk.NSEW)
         self.usernameLabel = tk.Label(self.frame, text="Username")
         self.usernameLabel.grid(sticky=tk.W)
@@ -80,6 +82,9 @@ class Login(tk.Frame):
         self.login = tk.Button(self.frame, text="log in", bg="#3d3d3d", fg="white", borderwidth=2, relief=tk.RAISED)
         self.login.config(command = lambda : controller.show_frame("App") if self.rightEntry() else self.createWrongLabel())
         self.login.grid(pady=7)
+        self.helpLabel = tk.Label(self.frame, text="Username must not be empty.\nPass must be 12345.", font=("Sans", 8))
+        self.helpLabel.grid()
+
         self.frame.place(relx=.5, rely=.5, anchor="c")
 
         self.entry1.bind("<Return>", lambda event : self.buttonPress(event))
@@ -92,8 +97,11 @@ class Login(tk.Frame):
         self.login.after(50, lambda : self.login.config(relief=tk.RAISED))
         self.login.invoke()
 
+# Password must be 12345 in order to pass login page
     def rightEntry(self):
-        if self.entry1.get() == "Rostiku" and self.entry2.get() == "12345":
+        if self.entry1.get() != "" and self.entry2.get() == "12345":
+            self.controller.username = self.entry1.get()
+            print(self.controller.username)
             return True
 
     def createWrongLabel(self):
@@ -124,19 +132,28 @@ class App(tk.Frame):
 
         self.messageFrame.bind("<Configure>", self.onFrameConfigure)
 
-        self.messageEntry = tk.Entry(self.frame)
+        self.messageEntry = tk.Text(self.frame, wrap=tk.WORD, height=1)
         self.messageEntry.focus()
-        self.messageEntry.pack(fill="x", padx=5, pady=5)
+        self.messageEntry.pack(fill="x", padx=5, pady=5, side="bottom")
 
         self.frame.pack(expand=True, fill="y", anchor="center", padx=10, pady=10)
         self.frame.pack_propagate(0)
 
-        controller.bind("<Return>", lambda event : self.createMessage() if len(self.messageEntry.get()) != 0 else None)
+        controller.bind("<Return>", lambda event : self.createMessage() if any(c.isalpha() for c in self.messageEntry.get("1.0", "end")) else self.messageEntry.delete("1.0", "end"))
 
     def createMessage(self):
-        self.newMessage = tk.Label(self.messageFrame, bg="grey", fg="black", text=self.messageEntry.get())
-        self.newMessage.pack(side=tk.TOP, anchor=tk.W, pady=2, padx=2)
-        self.messageEntry.delete(0, "end")
+        message = self.controller.username + ": " + self.messageEntry.get("1.0", "end")
+        frameWidth = self.frame.winfo_width() - self.scrollbar.winfo_width() - 15
+        self.newMessage = tk.Text(self.messageFrame, bg="grey", fg="black", font=("Arial", 10), width=52, relief=tk.FLAT, yscrollcommand=0)
+        self.newMessage.insert(tk.END, message.rstrip())
+
+        self.newMessage.config(height=int(self.newMessage.index('end').split('.')[0]), state=tk.DISABLED)
+        self.newMessage.pack(side=tk.TOP, anchor=tk.W, pady=2, padx=2, expand=1)
+
+        self.messageEntry.delete("1.0", "end")
+
+    def modifyMessage(self):
+        pass
 
     def onFrameConfigure(self, event):
         self.canvas.configure(scrollregion=self.canvas.bbox("all"))
