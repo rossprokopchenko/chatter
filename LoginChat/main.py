@@ -16,7 +16,7 @@ class SampleApp(tk.Tk):
         self.username = ""
 
         self.frames = {}
-        for F in (Login, App):
+        for F in (Login, App, Settings):
             page_name = F.__name__
             frame = F(parent=container, controller=self)
             self.frames[page_name] = frame 
@@ -26,7 +26,7 @@ class SampleApp(tk.Tk):
             # will be the one that is visible.
             frame.grid(row=0, column=0, sticky="nsew")
 
-        self.show_frame("Login")
+        self.show_frame("App")
 
     def show_frame(self, page_name):
         for frame in self.frames.values():
@@ -43,7 +43,7 @@ class SampleApp(tk.Tk):
 
             window.geometry("{}x{}+{}+{}".format(windowWidth, windowHeight, posWidth, posHeight))
             window.resizable(False, False)
-            window.title("Login Page")
+            window.title("Roskord")
 
         elif(page_name == "App"):
             windowWidth = 800
@@ -53,8 +53,19 @@ class SampleApp(tk.Tk):
             window = frame.winfo_toplevel()
 
             window.geometry("{}x{}+{}+{}".format(windowWidth, windowHeight, posWidth, posHeight))
-            window.resizable(True, True)
+            window.resizable(False, False)
             window.title("Roskord")
+
+        elif(page_name == "Settings"):
+            windowWidth = 800
+            windowHeight = 500
+            posWidth = int(frame.winfo_screenwidth()/2 - windowWidth/2)
+            posHeight = int(frame.winfo_screenheight()/2 - windowHeight/2)
+            window = frame.winfo_toplevel()
+
+            window.geometry("{}x{}+{}+{}".format(windowWidth, windowHeight, posWidth, posHeight))
+            window.resizable(False, False)
+            window.title("Settings")
 
         frame.grid()
 
@@ -101,7 +112,7 @@ class Login(tk.Frame):
     def rightEntry(self):
         if self.entry1.get() != "" and self.entry2.get() == "12345":
             self.controller.username = self.entry1.get()
-            print(self.controller.username)
+            self.entry2.delete(0, "end")
             return True
 
     def createWrongLabel(self):
@@ -120,10 +131,13 @@ class App(tk.Frame):
         self.frame = tk.Frame(self, width=400, height=500)
         self.frame.config(bg="grey", highlightthickness=.5, borderwidth=2, relief=tk.RAISED)
 
+        # MAIN CHAT BOX
+
         self.canvas = tk.Canvas(self.frame, borderwidth=0, background="grey")
-        self.messageFrame = tk.Frame(self.canvas, background="grey")
-        self.scrollbar = tk.Scrollbar(self.canvas, orient="vertical", command=self.canvas.yview)
-        self.canvas.configure(yscrollcommand=self.scrollbar.set)
+        self.messageFrame = tk.Text(self.canvas, background="grey", relief=tk.FLAT, state=tk.DISABLED, height=27, width=45, wrap=tk.WORD)
+        self.messageFrame.pack(side=tk.TOP, anchor=tk.W, pady=2, padx=2, expand=True)
+        self.scrollbar = tk.Scrollbar(self.canvas, orient="vertical", command=self.messageFrame.yview)
+        self.messageFrame.configure(yscrollcommand=self.scrollbar.set)
 
         self.scrollbar.pack(side="right", fill="y")
         self.canvas.pack(side="top", fill="both", expand=True)
@@ -136,19 +150,26 @@ class App(tk.Frame):
         self.messageEntry.focus()
         self.messageEntry.pack(fill="x", padx=5, pady=5, side="bottom")
 
-        self.frame.pack(expand=True, fill="y", anchor="center", padx=10, pady=10)
+        # ADD-ONS (right)
+        
+        self.settings = tk.Button(self, text="Settings", bg="#3d3d3d", fg="white", borderwidth=2, relief=tk.RAISED)
+        self.settings.config(command = lambda : controller.show_frame("Settings"))
+        self.settings.pack(anchor=tk.S, side=tk.LEFT, padx=10, pady=10)
+
+        self.signOut = tk.Button(self, text="Sign Out", bg="#3d3d3d", fg="white", borderwidth=2, relief=tk.RAISED)
+        self.signOut.config(command = lambda : controller.show_frame("Login"))
+        self.signOut.pack(anchor=tk.S, side=tk.RIGHT, padx=10, pady=10)
+
+        self.frame.pack(expand=True, fill="y", anchor=tk.CENTER, padx=10, pady=10)
         self.frame.pack_propagate(0)
 
         controller.bind("<Return>", lambda event : self.createMessage() if any(c.isalpha() for c in self.messageEntry.get("1.0", "end")) else self.messageEntry.delete("1.0", "end"))
 
     def createMessage(self):
         message = self.controller.username + ": " + self.messageEntry.get("1.0", "end")
-        frameWidth = self.frame.winfo_width() - self.scrollbar.winfo_width() - 15
-        self.newMessage = tk.Text(self.messageFrame, bg="grey", fg="black", font=("Arial", 10), width=52, relief=tk.FLAT, yscrollcommand=0)
-        self.newMessage.insert(tk.END, message.rstrip())
-
-        self.newMessage.config(height=int(self.newMessage.index('end').split('.')[0]), state=tk.DISABLED)
-        self.newMessage.pack(side=tk.TOP, anchor=tk.W, pady=2, padx=2, expand=1)
+        self.messageFrame.config(state=tk.NORMAL)
+        self.messageFrame.insert(tk.END, message)
+        self.messageFrame.config(state=tk.DISABLED)
 
         self.messageEntry.delete("1.0", "end")
 
@@ -157,6 +178,25 @@ class App(tk.Frame):
 
     def onFrameConfigure(self, event):
         self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+
+
+class Settings(tk.Frame):
+    def __init__(self, parent, controller):
+        tk.Frame.__init__(self, parent)
+        self.controller = controller
+
+        self.frame = tk.Frame(self, width=400, height=500)
+        self.frame.config(bg="grey", highlightthickness=.5, borderwidth=2, relief=tk.SUNKEN)
+        self.frame2 = tk.Frame(self, width=300, height=300)
+        self.frame2.config(bg="grey", highlightthickness=.5, borderwidth=2, relief=tk.RAISED)
+
+        self.backButton = tk.Button(self, text="Go Back", bg="#3d3d3d", fg="white", borderwidth=2, relief=tk.RAISED)
+        self.backButton.config(command = lambda : controller.show_frame("App"))
+        
+
+        self.frame.pack(anchor=tk.W, side=tk.LEFT, padx=10, pady=10)
+        self.frame2.pack(anchor=tk.E, padx=10, pady=10)
+        self.backButton.pack(anchor=tk.E, side=tk.BOTTOM, padx=10, pady=10)
 
 if __name__ == "__main__":
     app = SampleApp()
