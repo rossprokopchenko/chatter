@@ -26,7 +26,7 @@ class SampleApp(tk.Tk):
             # will be the one that is visible.
             frame.grid(row=0, column=0, sticky="nsew")
 
-        self.show_frame("App")
+        self.show_frame("Login")
 
     def show_frame(self, page_name):
         for frame in self.frames.values():
